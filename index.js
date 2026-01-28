@@ -14,6 +14,9 @@ const client = new Client({
 
 client.once('ready', () => {
     console.log(`Bot logged in as ${client.user.tag}`);
+
+    // Set bot activity status
+    client.user.setActivity('KY EKİBİNİN HİZMETİNDEDİR.', { type: 0 }); // type: 0 = Playing
 });
 
 // Auto-assign Unregistered role on join
