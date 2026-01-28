@@ -14,6 +14,53 @@ const client = new Client({
     partials: [Partials.Channel]
 });
 
+// Function to join voice channel with persistence
+function joinVoiceChannelPersistent(guild, voiceChannel) {
+    try {
+        const connection = joinVoiceChannel({
+            channelId: voiceChannel.id,
+            guildId: guild.id,
+            adapterCreator: guild.voiceAdapterCreator,
+            selfDeaf: true,
+            selfMute: false
+        });
+
+        console.log(`✅ Successfully joined voice channel: ${voiceChannel.name} (Deafened)`);
+
+        // Monitor connection state and reconnect if disconnected
+        connection.on('stateChange', (oldState, newState) => {
+            console.log(`Voice connection state changed: ${oldState.status} -> ${newState.status}`);
+        });
+
+        connection.on('error', (error) => {
+            console.error(`❌ Voice connection error:`, error.message);
+            // Attempt to reconnect after error
+            setTimeout(() => {
+                console.log('🔄 Attempting to reconnect to voice channel...');
+                joinVoiceChannelPersistent(guild, voiceChannel);
+            }, 5000);
+        });
+
+        // Keep connection alive
+        setInterval(() => {
+            const currentConnection = getVoiceConnection(guild.id);
+            if (!currentConnection) {
+                console.log('⚠️ Voice connection lost. Reconnecting...');
+                joinVoiceChannelPersistent(guild, voiceChannel);
+            }
+        }, 30000); // Check every 30 seconds
+
+        return connection;
+    } catch (error) {
+        console.error(`❌ Failed to join voice channel in ${guild.name}:`, error.message);
+        // Retry after 10 seconds
+        setTimeout(() => {
+            console.log('🔄 Retrying voice channel connection...');
+            joinVoiceChannelPersistent(guild, voiceChannel);
+        }, 10000);
+    }
+}
+
 client.once('ready', () => {
     console.log(`Bot logged in as ${client.user.tag}`);
 
@@ -32,18 +79,7 @@ client.once('ready', () => {
             console.log(`Found voice channel: ${voiceChannel.name} in guild: ${guild.name}`);
 
             if (voiceChannel.isVoiceBased()) {
-                try {
-                    const connection = joinVoiceChannel({
-                        channelId: voiceChannel.id,
-                        guildId: guild.id,
-                        adapterCreator: guild.voiceAdapterCreator,
-                        selfDeaf: true,
-                        selfMute: false
-                    });
-                    console.log(`✅ Successfully joined voice channel: ${voiceChannel.name} (Deafened)`);
-                } catch (error) {
-                    console.error(`❌ Failed to join voice channel in ${guild.name}:`, error.message);
-                }
+                joinVoiceChannelPersistent(guild, voiceChannel);
             } else {
                 console.warn(`⚠️ Channel ${voiceChannel.name} is not a voice-based channel.`);
             }
