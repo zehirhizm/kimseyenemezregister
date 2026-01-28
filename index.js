@@ -21,26 +21,34 @@ client.once('ready', () => {
     client.user.setActivity('KY EKİBİNİN HİZMETİNDEDİR.', { type: 0 }); // type: 0 = Playing
 
     // Join voice channel and stay deafened
-    const guild = client.guilds.cache.first();
-    if (guild) {
+    console.log(`Searching for voice channel ID: ${config.channels.voice}`);
+
+    // Check all guilds the bot is in
+    client.guilds.cache.forEach(guild => {
+        console.log(`Checking guild: ${guild.name} (${guild.id})`);
         const voiceChannel = guild.channels.cache.get(config.channels.voice);
-        if (voiceChannel && voiceChannel.isVoiceBased()) {
-            try {
-                const connection = joinVoiceChannel({
-                    channelId: voiceChannel.id,
-                    guildId: guild.id,
-                    adapterCreator: guild.voiceAdapterCreator,
-                    selfDeaf: true,
-                    selfMute: false
-                });
-                console.log(`Joined voice channel: ${voiceChannel.name} (Deafened)`);
-            } catch (error) {
-                console.error('Failed to join voice channel:', error);
+
+        if (voiceChannel) {
+            console.log(`Found voice channel: ${voiceChannel.name} in guild: ${guild.name}`);
+
+            if (voiceChannel.isVoiceBased()) {
+                try {
+                    const connection = joinVoiceChannel({
+                        channelId: voiceChannel.id,
+                        guildId: guild.id,
+                        adapterCreator: guild.voiceAdapterCreator,
+                        selfDeaf: true,
+                        selfMute: false
+                    });
+                    console.log(`✅ Successfully joined voice channel: ${voiceChannel.name} (Deafened)`);
+                } catch (error) {
+                    console.error(`❌ Failed to join voice channel in ${guild.name}:`, error.message);
+                }
+            } else {
+                console.warn(`⚠️ Channel ${voiceChannel.name} is not a voice-based channel.`);
             }
-        } else {
-            console.warn('Voice channel not found or is not a voice-based channel.');
         }
-    }
+    });
 });
 
 // Auto-assign Unregistered role on join
