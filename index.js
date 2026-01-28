@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice');
 require('dotenv').config();
 const config = require('./config');
 
@@ -7,7 +8,8 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates
     ],
     partials: [Partials.Channel]
 });
@@ -17,6 +19,28 @@ client.once('ready', () => {
 
     // Set bot activity status
     client.user.setActivity('KY EKİBİNİN HİZMETİNDEDİR.', { type: 0 }); // type: 0 = Playing
+
+    // Join voice channel and stay deafened
+    const guild = client.guilds.cache.first();
+    if (guild) {
+        const voiceChannel = guild.channels.cache.get(config.channels.voice);
+        if (voiceChannel && voiceChannel.isVoiceBased()) {
+            try {
+                const connection = joinVoiceChannel({
+                    channelId: voiceChannel.id,
+                    guildId: guild.id,
+                    adapterCreator: guild.voiceAdapterCreator,
+                    selfDeaf: true,
+                    selfMute: false
+                });
+                console.log(`Joined voice channel: ${voiceChannel.name} (Deafened)`);
+            } catch (error) {
+                console.error('Failed to join voice channel:', error);
+            }
+        } else {
+            console.warn('Voice channel not found or is not a voice-based channel.');
+        }
+    }
 });
 
 // Auto-assign Unregistered role on join
